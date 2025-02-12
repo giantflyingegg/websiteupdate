@@ -1,4 +1,4 @@
-import AnimatedSectionCard from './shared/AnimatedSectionCard'
+import AnimatedSectionCard from '@/components/shared/AnimatedSectionCard'
 
 export default function WWW3WS() {
   return (
