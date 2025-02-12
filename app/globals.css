@@ -2,35 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-[#f2f8fa] font-roboto m-0;
+@layer base {
+  body {
+    @apply bg-gray-900 text-gray-100 font-roboto m-0;
+  }
 }
 
 @layer components {
-  .navbar {
-    @apply flex justify-evenly items-center p-5;
-  }
-
-  .menu-icon {
-    @apply hidden cursor-pointer flex-col justify-around items-center h-6 w-full;
-  }
-
-  .menu-icon span {
-    @apply block h-0.5 w-6 bg-black;
-  }
-
-  .navbar ul {
-    @apply list-none p-0 m-0 flex text-center;
-  }
-
-  .link {
-    @apply mx-10;
-  }
-
-  .link a {
-    @apply no-underline text-black font-bold text-xl;
-  }
-
+  /* Remove old navbar styles and add new dark theme components */
+  
   .fade-in {
     @apply text-left text-3xl m-[60px] px-[100px] opacity-0 translate-y-5 transition-all duration-1000;
   }
@@ -40,11 +20,13 @@ body {
   }
 
   #about, #www3ws {
-    @apply bg-white m-10 border border-black rounded-[2%];
+    @apply bg-gray-800 m-10 border border-blue-500/20 rounded-[2%] 
+           hover:border-blue-500/40 transition-all duration-300 shadow-lg;
   }
 
   h1, h2, h3 {
-    @apply font-pacifico text-center text-4xl mt-0;
+    @apply font-pacifico text-center text-4xl mt-0 
+           bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text;
   }
 
   h1, h2 {
@@ -54,21 +36,19 @@ body {
   h3 {
     @apply pb-2.5;
   }
+
+  /* Dark theme specific utilities */
+  .glass-card {
+    @apply bg-gray-800/90 backdrop-blur-sm border border-blue-500/20 
+           hover:border-blue-500/40 transition-all duration-300;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text;
+  }
 }
 
 @media screen and (max-width: 715px) {
-  .navbar ul {
-    @apply hidden;
-  }
-
-  .navbar ul.show {
-    @apply block;
-  }
-
-  .menu-icon {
-    @apply flex;
-  }
-
   .fade-in {
     @apply m-2.5 px-2.5;
   }
