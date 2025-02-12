@@ -1,6 +1,29 @@
+'use client'
+import { useEffect, useRef } from 'react'
 import AnimatedSectionCard from '@/components/shared/AnimatedSectionCard'
 
 export default function WWW3WS() {
+  const observerRef = useRef<IntersectionObserver | null>(null)
+
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible')
+        }
+      })
+    })
+
+    const fadeElements = document.querySelectorAll('.fade-in')
+    fadeElements.forEach(element => {
+      observerRef.current?.observe(element)
+    })
+
+    return () => {
+      observerRef.current?.disconnect()
+    }
+  }, [])
+
   return (
     <AnimatedSectionCard id="www3ws" title="Weekly Web3 Workshop">
       <p className="fade-in">WW3WS is a weekly meetup dedicated to the Web3 space. Founded in 2022 by James Zaki, a developer with the Ethereum Foundation, our weekly meetups serve as a platform for talented individuals to share innovation, discussion, and exploration.</p>
