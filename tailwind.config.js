@@ -12,19 +12,12 @@ module.exports = {
         pacifico: ['var(--font-pacifico)'],
       },
       animation: {
-        'tilt': 'tilt 10s infinite linear',
+        'float': 'float 6s ease-in-out infinite',
       },
       keyframes: {
-        tilt: {
-          '0%, 50%, 100%': {
-            transform: 'rotate(0deg)',
-          },
-          '25%': {
-            transform: 'rotate(0.5deg)',
-          },
-          '75%': {
-            transform: 'rotate(-0.5deg)',
-          },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
         },
       },
     },
