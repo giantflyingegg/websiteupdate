@@ -26,11 +26,11 @@ export default function About() {
 
   return (
     <AnimatedSectionCard id="about" title="About me:">
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {/* Background */}
         <div className="fade-in">
-          <h3 className="text-xl font-bold text-blue-400 mb-3">Background</h3>
-          <p className="text-gray-300">
+          <h3 className="text-lg font-bold text-blue-400 mb-2 sm:mb-3">Background</h3>
+          <p className="text-gray-300 text-sm sm:text-base">
             After a decade as an NHS physician, I pivoted to tech, driven by a passion for innovation. 
             My medical background gives me a unique perspective on problem-solving and user-centric design.
           </p>
@@ -38,15 +38,15 @@ export default function About() {
 
         {/* Technical Journey */}
         <div className="fade-in">
-          <h3 className="text-lg font-bold text-blue-400 mb-3">Technical Journey</h3>
-          <p className="text-gray-300 mb-4">
+          <h3 className="text-lg font-bold text-blue-400 mb-2 sm:mb-3">Technical Journey</h3>
+          <p className="text-gray-300 text-sm sm:text-base mb-3 sm:mb-4">
             I've completed a full stack bootcamp with Founders and Coders, multiple Encode Club bootcamps including Solidity and AI/ML, 
             and continuously expand my skills in both development and blockchain technologies.
           </p>
           
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1 sm:gap-2">
             {['JavaScript', 'TypeScript', 'React', 'Next.js', 'Node.js', 'HTML', 'CSS', 'Tailwind', 'Solidity', 'Python'].map(skill => (
-              <span key={skill} className="bg-gray-800 px-3 py-1 rounded-full text-sm text-gray-300 border border-gray-700">
+              <span key={skill} className="bg-gray-800 px-2 py-1 rounded-full text-xs sm:text-sm text-gray-300 border border-gray-700">
                 {skill}
               </span>
             ))}
@@ -55,18 +55,18 @@ export default function About() {
 
         {/* Current Focus */}
         <div className="fade-in">
-          <h3 className="text-lg font-bold text-blue-400 mb-3">Current Focus</h3>
-          <p className="text-gray-300">
+          <h3 className="text-lg font-bold text-blue-400 mb-2 sm:mb-3">Current Focus</h3>
+          <p className="text-gray-300 text-sm sm:text-base">
             Since 2017, I've been active in the Ethereum ecosystem, working with DAOs and exploring Zero-Knowledge Proofs. 
-            I formerly helped co-organize Weekly Web3 Workshop (WW3WS) and manage my own Ethereum node and validator. 
-            Currently, I'm building skills with AI/ML tools like Hugging Face, LlamaFile, and Langchain.
+            I co-organize Weekly Web3 Workshop (WW3WS) and manage my own Ethereum node and validator. 
+            Currently, I'm diving into AI/ML tools like Hugging Face, LlamaFile, and Langchain.
           </p>
         </div>
 
         {/* Projects & Interests */}
         <div className="fade-in">
-          <h3 className="text-lg font-bold text-blue-400 mb-3">Projects & Interests</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-gray-300">
+          <h3 className="text-lg font-bold text-blue-400 mb-2 sm:mb-3">Projects & Interests</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-gray-300 text-sm sm:text-base">
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
               <span>Web3</span>
@@ -87,7 +87,7 @@ export default function About() {
         </div>
 
         {/* Personal Note */}
-        <p className="text-gray-400 text-center italic mt-8 fade-in">
+        <p className="text-gray-400 text-center italic mt-6 sm:mt-8 fade-in text-xs sm:text-sm">
           Let's connect! I'm always happy to chat about Web3, AI, or if you want to jump down the rabbit hole, AGI and non-human intelligences
         </p>
       </div>

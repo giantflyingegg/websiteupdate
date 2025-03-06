@@ -3,9 +3,11 @@ import About from '@/components/home/About';
 
 export default function Home() {
   return (
-    <div className="min-h-screen pt-16">
+    <div className="w-full overflow-x-hidden">
       <HeroSection />
-      <About />
+      <div className="px-2 sm:px-4 md:px-6 lg:px-8">
+        <About />
+      </div>
     </div>
   );
 }

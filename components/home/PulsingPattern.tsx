@@ -31,6 +31,9 @@ interface Particle {
 }
 
 const PulsingPattern = () => {
+  // Client-side rendering flag to avoid hydration errors
+  const [isClient, setIsClient] = useState(false);
+  
   // Core state
   const [nodes, setNodes] = useState<Node[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -45,6 +48,11 @@ const PulsingPattern = () => {
   const evolutionRef = useRef<NodeJS.Timeout | null>(null);
   const nodesRef = useRef<Node[]>([]);
   
+  // Hydration fix - set isClient to true after mount
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
   // Update the ref when nodes change
   useEffect(() => {
     nodesRef.current = nodes;
@@ -58,9 +66,9 @@ const PulsingPattern = () => {
   const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
 
   // Generate a unique ID for particles
-  const getUniqueParticleId = () => {
+  const getUniqueParticleId = useCallback(() => {
     return `particle-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  };
+  }, []);
 
   // Create new node
   const createNode = useCallback((x: number, y: number, color: 'blue' | 'purple') => {
@@ -109,7 +117,7 @@ const PulsingPattern = () => {
     }
     
     setParticles(prevParticles => [...prevParticles, ...newParticles]);
-  }, []);
+  }, [getUniqueParticleId]);
 
   // Update particles (move them and reduce their life)
   const updateParticles = useCallback(() => {
@@ -128,8 +136,7 @@ const PulsingPattern = () => {
 
   // Grow the pattern organically
   const growPattern = useCallback(() => {
-    console.log('Growing pattern...');
-    if (!containerRef.current) return;
+    if (!containerRef.current || !isClient) return;
     
     // Use the ref to get the current nodes state
     const currentNodes = nodesRef.current;
@@ -139,7 +146,6 @@ const PulsingPattern = () => {
     
     // Stop if we've reached the maximum
     if (currentNodes.length >= MAX_NODES) {
-      console.log('Maximum nodes reached, not growing further');
       return;
     }
     
@@ -220,15 +226,15 @@ const PulsingPattern = () => {
     
     // Update state with new nodes and connections
     if (newNodes.length > 0) {
-      console.log(`Adding ${newNodes.length} new nodes`);
       setNodes(prevNodes => [...prevNodes, ...newNodes]);
       setConnections(prevConnections => [...prevConnections, ...newConnections]);
     }
-  }, [CONNECTION_THRESHOLD, MIN_NODE_DISTANCE, MAX_NODES, createNodeParticles, createNode, createConnection]);
+  }, [CONNECTION_THRESHOLD, MIN_NODE_DISTANCE, MAX_NODES, createNodeParticles, createNode, createConnection, isClient]);
 
   // Handle evolution system
   const startEvolutionSystem = useCallback(() => {
-    console.log('Starting evolution system');
+    // Don't start evolution until client-side
+    if (!isClient) return () => {};
     
     // Clear any existing evolution timer
     if (evolutionRef.current) {
@@ -236,18 +242,13 @@ const PulsingPattern = () => {
     }
     
     const evolve = () => {
-      console.log(`Evolution cycle - Current nodes: ${nodesRef.current.length}/${MAX_NODES}`);
-      
       // Only grow if we haven't reached the maximum
       if (nodesRef.current.length < MAX_NODES) {
         growPattern();
         
         // Always use the specified interval
         const nextInterval = EVOLUTION_INTERVAL;
-        console.log(`Scheduling next evolution in ${nextInterval/1000} seconds`);
         evolutionRef.current = setTimeout(evolve, nextInterval);
-      } else {
-        console.log('Maximum nodes reached, stopping evolution');
       }
     };
     
@@ -261,11 +262,12 @@ const PulsingPattern = () => {
         clearTimeout(evolutionRef.current);
       }
     };
-  }, [growPattern, MAX_NODES, EVOLUTION_INTERVAL]);
+  }, [growPattern, MAX_NODES, EVOLUTION_INTERVAL, isClient]);
 
   // Handle clicks - make all nodes emit particles
   const handleClick = useCallback(() => {
-    console.log('Click handler activated');
+    if (!isClient) return;
+    
     // Make every node emit particles
     nodesRef.current.forEach(node => {
       createNodeParticles(node.x, node.y, node.color);
@@ -275,10 +277,12 @@ const PulsingPattern = () => {
     if (nodesRef.current.length < MAX_NODES) {
       growPattern();
     }
-  }, [createNodeParticles, growPattern, MAX_NODES]);
+  }, [createNodeParticles, growPattern, MAX_NODES, isClient]);
 
   // Main animation loop
   const startAnimationLoop = useCallback(() => {
+    if (!isClient) return;
+    
     const animate = (timestamp: number) => {
       // Update time state to trigger re-renders (this drives all animations)
       setTime(timestamp);
@@ -291,89 +295,85 @@ const PulsingPattern = () => {
     };
     
     rafIdRef.current = requestAnimationFrame(animate);
-  }, [updateParticles]);
+  }, [updateParticles, isClient]);
 
   // Initialize the pattern with a triangle
   useEffect(() => {
-    console.log('Initializing pattern');
+    // Only run initialization after client-side mounting
+    if (!isClient || !containerRef.current) return;
     
-    if (containerRef.current) {
-      const container = containerRef.current;
-      const { width, height } = container.getBoundingClientRect();
-      
-      const centerX = width / 2;
-      const centerY = height / 2;
-      const radius = Math.min(width, height) * 0.2;
-      const now = Date.now();
+    const container = containerRef.current;
+    const { width, height } = container.getBoundingClientRect();
+    
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) * 0.2;
+    const now = Date.now();
 
-      // Create initial triangle pattern
-      const initialNodes = [
-        {
-          id: 1,
-          x: centerX,
-          y: centerY - radius,
-          color: 'blue' as 'blue',
-          size: 1,
-          createdAt: now
-        },
-        {
-          id: 2,
-          x: centerX - radius * Math.cos(Math.PI / 6),
-          y: centerY + radius * Math.sin(Math.PI / 6),
-          color: 'purple' as 'purple',
-          size: 1,
-          createdAt: now
-        },
-        {
-          id: 3,
-          x: centerX + radius * Math.cos(Math.PI / 6),
-          y: centerY + radius * Math.sin(Math.PI / 6),
-          color: 'blue' as 'blue',
-          size: 1,
-          createdAt: now
-        },
-      ];
+    // Create initial triangle pattern
+    const initialNodes = [
+      {
+        id: 1,
+        x: centerX,
+        y: centerY - radius,
+        color: 'blue' as 'blue',
+        size: 1,
+        createdAt: now
+      },
+      {
+        id: 2,
+        x: centerX - radius * Math.cos(Math.PI / 6),
+        y: centerY + radius * Math.sin(Math.PI / 6),
+        color: 'purple' as 'purple',
+        size: 1,
+        createdAt: now
+      },
+      {
+        id: 3,
+        x: centerX + radius * Math.cos(Math.PI / 6),
+        y: centerY + radius * Math.sin(Math.PI / 6),
+        color: 'blue' as 'blue',
+        size: 1,
+        createdAt: now
+      },
+    ];
 
-      // Connect nodes to form a triangle
-      const initialConnections = [
-        {
-          id: 1,
-          from: 1,
-          to: 2,
-          strength: 1,
-          createdAt: now
-        },
-        {
-          id: 2,
-          from: 2,
-          to: 3,
-          strength: 1,
-          createdAt: now
-        },
-        {
-          id: 3,
-          from: 3,
-          to: 1,
-          strength: 1,
-          createdAt: now
-        },
-      ];
-
-      console.log('Setting initial nodes and connections');
-      
-      // Set initial state
-      lastNodeIdRef.current = 3;
-      lastConnectionIdRef.current = 3;
-      setNodes(initialNodes);
-      setConnections(initialConnections);
-      
-      // Start animation loop
-      startAnimationLoop();
-    }
+    // Connect nodes to form a triangle
+    const initialConnections = [
+      {
+        id: 1,
+        from: 1,
+        to: 2,
+        strength: 1,
+        createdAt: now
+      },
+      {
+        id: 2,
+        from: 2,
+        to: 3,
+        strength: 1,
+        createdAt: now
+      },
+      {
+        id: 3,
+        from: 3,
+        to: 1,
+        strength: 1,
+        createdAt: now
+      },
+    ];
+    
+    // Set initial state
+    lastNodeIdRef.current = 3;
+    lastConnectionIdRef.current = 3;
+    setNodes(initialNodes);
+    setConnections(initialConnections);
+    
+    // Start animation loop
+    startAnimationLoop();
     
     return () => {
       // Clean up on unmount
-      console.log('Cleaning up component');
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
       }
@@ -381,34 +381,52 @@ const PulsingPattern = () => {
         clearTimeout(evolutionRef.current);
       }
     };
-  }, [startAnimationLoop]);
+  }, [startAnimationLoop, isClient]);
   
   // Add click event listener
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.addEventListener('click', handleClick);
-    }
+    if (!isClient || !containerRef.current) return;
+    
+    containerRef.current.addEventListener('click', handleClick);
     
     return () => {
       if (containerRef.current) {
         containerRef.current.removeEventListener('click', handleClick);
       }
     };
-  }, [handleClick]);
+  }, [handleClick, isClient]);
   
   // Start evolution system after initialization - only ONCE
   useEffect(() => {
-    // Only run this effect once after initial nodes are set
-    const hasInitialNodes = nodes.length > 0;
-    if (hasInitialNodes) {
-      console.log(`Starting evolution system with ${nodes.length} initial nodes - ONE TIME SETUP`);
-      const cleanup = startEvolutionSystem();
-      return cleanup;
-    }
-  }, [startEvolutionSystem, nodes.length]); // Include nodes.length to ensure it runs after nodes are set
+    // Only run this effect after client-side mounting with initial nodes
+    if (!isClient || nodes.length === 0) return;
+    
+    const cleanup = startEvolutionSystem();
+    return cleanup;
+  }, [startEvolutionSystem, nodes.length, isClient]);
 
   // Calculate node visual style based on age and pulse
   const calculateNodeStyle = useCallback((node: Node) => {
+    // If server-side rendering, return static styles
+    if (!isClient) {
+      return {
+        core: {
+          cx: node.x,
+          cy: node.y,
+          r: 6,
+          fill: node.color === 'blue' ? '#60A5FA' : '#A855F7',
+          fillOpacity: 0.8,
+        },
+        glow: {
+          cx: node.x,
+          cy: node.y,
+          r: 12,
+          fill: node.color === 'blue' ? 'rgba(96, 165, 250, 0.5)' : 'rgba(168, 85, 247, 0.5)',
+          fillOpacity: 0.2,
+        }
+      };
+    }
+    
     // Current time for age calculation
     const now = Date.now();
     const age = now - node.createdAt;
@@ -494,7 +512,7 @@ const PulsingPattern = () => {
         fillOpacity: glowOpacity,
       }
     };
-  }, [time]); // Depend on time to ensure recalculation on each animation frame
+  }, [time, isClient]);
 
   // Calculate connection style
   const calculateConnectionStyle = useCallback((connection: Connection) => {
@@ -503,6 +521,19 @@ const PulsingPattern = () => {
     
     if (!fromNode || !toNode) {
       return null;
+    }
+    
+    // If server-side rendering, return static styles
+    if (!isClient) {
+      return {
+        x1: fromNode.x,
+        y1: fromNode.y,
+        x2: toNode.x,
+        y2: toNode.y,
+        stroke: fromNode.color === 'blue' ? '#60A5FA' : '#A855F7',
+        strokeWidth: 1.5,
+        strokeOpacity: 0.3,
+      };
     }
     
     // Current time for calculations
@@ -555,10 +586,22 @@ const PulsingPattern = () => {
       strokeWidth: width,
       strokeOpacity: opacity,
     };
-  }, [nodes, time]); // Depend on nodes and time to ensure recalculation
+  }, [nodes, time, isClient]);
 
   // Calculate background gradient position based on time
   const backgroundGradient = useCallback(() => {
+    // For server-side rendering or initial client render, use static gradient
+    if (!isClient) {
+      return {
+        backgroundImage: `radial-gradient(
+          circle at 50% 50%, 
+          rgba(37, 99, 235, 0.1), 
+          rgba(0, 0, 0, 0)
+        )`
+      };
+    }
+    
+    // Dynamic gradient for client-side after hydration
     const now = Date.now();
     const cycle = 10000; // 10 second cycle
     const phase = (now % cycle) / cycle;
@@ -570,7 +613,7 @@ const PulsingPattern = () => {
         rgba(0, 0, 0, 0)
       )`
     };
-  }, [time]); // Depend on time to ensure recalculation
+  }, [time, isClient]);
 
   return (
     <div 
@@ -583,8 +626,6 @@ const PulsingPattern = () => {
         className="absolute inset-0 bg-gradient-to-br opacity-20"
         style={backgroundGradient()}
       ></div>
-      
-      {/* No debug info displayed */}
       
       <svg className="w-full h-full" style={{ pointerEvents: 'none' }}>
         {/* Draw connections */}

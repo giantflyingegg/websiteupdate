@@ -1,4 +1,4 @@
-import './globals.css'  // This path needs to be updated since we moved the file
+import './globals.css'
 import type { Metadata } from 'next'
 import { Roboto, Pacifico } from 'next/font/google'
 import Navbar from '@/components/shared/Navbar'
@@ -37,9 +37,8 @@ export default function RootLayout({
         {/* Navbar at the top */}
         <Navbar />
         
-        {/* Main content area */}
-        <main className="flex-grow">
-          {/* Page transition wrapper could be added here later */}
+        {/* Main content area with padding-top to account for navbar */}
+        <main className="flex-grow pt-16">
           {children}
         </main>
 
