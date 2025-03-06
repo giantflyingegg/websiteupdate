@@ -74,7 +74,7 @@ function NavLinks({ isActive }: { isActive: (path: string) => boolean }) {
         href="/ww3ws" 
         className={`text-lg ${isActive('/ww3ws') ? 'text-blue-400' : 'text-gray-300 hover:text-white'} transition-colors`}
       >
-        WW3WS
+        Web3
       </Link>
       <Link 
         href="/portfolio" 

@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react'
 import AnimatedSectionCard from '@/components/shared/AnimatedSectionCard'
 
-export default function WWW3WS() {
+export default function Web3() {
   const observerRef = useRef<IntersectionObserver | null>(null)
 
   useEffect(() => {
@@ -24,37 +24,23 @@ export default function WWW3WS() {
     }
   }, [])
 
+  // Define a paragraph style with smaller margins
+  const paragraphClass = "fade-in mb-4 last:mb-0"
+
   return (
-    <AnimatedSectionCard id="www3ws" title="Weekly Web3 Workshop">
-      <p className="fade-in">WW3WS is a weekly meetup dedicated to the Web3 space. Founded in 2022 by James Zaki, a developer with the Ethereum Foundation, our weekly meetups serve as a platform for talented individuals to share innovation, discussion, and exploration.</p>
-      
-      <p className="fade-in">While our roots lie in the Ethereum ecosystem, we also explore the broader crypto universe, tackling topics that range from the latest technological advancements to the economic, sociological, and philosophical underpinnings of this digital revolution.</p>
-      
-      <p className="fade-in">Below are two examples of presentations I have given at the workshops:</p>
-      
-      <div className="presentation-container">
-        <div className="slides-container">
-          <div className="iframe-wrapper">
-            <iframe
-              src="https://docs.google.com/presentation/d/e/2PACX-1vSDLQfKs0tWd6gaWeCq79T68o_ZpgjW1AcjqmfBRpkpojyRNp687v0SIYokEKDhFHyQvuEQDjaaYv2d/embed?start=false&loop=false&delayms=3000"
-              frameBorder="0"
-              allowFullScreen
-              title="Google Slide Presentation 1"
-              className="w-full aspect-video rounded-lg shadow-lg"
-            />
-          </div>
-        </div>
-        <div className="slides-container mt-8">
-          <div className="iframe-wrapper">
-            <iframe
-              src="https://docs.google.com/presentation/d/e/2PACX-1vQdSG0Z_7Ql2wGSNU7vOAwxUupGq8oj0ugV90vNnZB-Ho7a9yFOCd7mYtddlcryRj2lwJdFrzdNpcCO/embed?start=false&loop=false&delayms=3000"
-              frameBorder="0"
-              allowFullScreen
-              title="Google Slide Presentation 2"
-              className="w-full aspect-video rounded-lg shadow-lg"
-            />
-          </div>
-        </div>
+    <AnimatedSectionCard id="web3" title="My Web3 Journey">
+      <div className="flex flex-col">
+        <p className={paragraphClass}>
+          From early DeFi explorer to DAO contributor, my Web3 path spans multiple ecosystems. As an early member of Friends With Benefits (FWB) DAO, I helped shape community governance while serving on their Membership Committee.
+        </p>
+        
+        <p className={paragraphClass}>
+          My interests extend across generative art NFTs, DeSci initiatives, and Ethereum's evolving infrastructure. I maintain my own Ethereum node and validator, staying hands-on with the technology I advocate for.
+        </p>
+        
+        <p className={paragraphClass}>
+          I've been an active participant in the Weekly Web3 Workshop (WW3WS) in London, a vibrant community where developers, creators, and curious minds converge to explore the cutting edge of decentralized technology.
+        </p>
       </div>
     </AnimatedSectionCard>
   )
