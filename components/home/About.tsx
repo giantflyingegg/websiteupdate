@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useRef } from 'react'
 import AnimatedSectionCard from '@/components/shared/AnimatedSectionCard'
+import Link from 'next/link'
 
 export default function About() {
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -53,37 +54,16 @@ export default function About() {
           </div>
         </div>
 
-        {/* Current Focus */}
-        <div className="fade-in">
-          <h3 className="text-lg font-bold text-blue-400 mb-2 sm:mb-3">Current Focus</h3>
-          <p className="text-gray-300 text-sm sm:text-base">
-            Since 2017, I've been active in the Ethereum ecosystem, working with DAOs and exploring Zero-Knowledge Proofs. 
-            I co-organize Weekly Web3 Workshop (WW3WS) and manage my own Ethereum node and validator. 
-            Currently, I'm diving into AI/ML tools like Hugging Face, LlamaFile, and Langchain.
+        {/* Simple link to Goals page */}
+        <div className="fade-in mt-8 text-center">
+          <p className="text-gray-300">
+            <Link 
+              href="/goals" 
+              className="text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              See more about my current goals and direction →
+            </Link>
           </p>
-        </div>
-
-        {/* Projects & Interests */}
-        <div className="fade-in">
-          <h3 className="text-lg font-bold text-blue-400 mb-2 sm:mb-3">Projects & Interests</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-gray-300 text-sm sm:text-base">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-              <span>Web3</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-              <span>RaspberryPi & Arduino builds</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-              <span>ZK and Privacy-focused blockchain</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-              <span>AI/ML integration</span>
-            </div>
-          </div>
         </div>
 
         {/* Personal Note */}
