@@ -58,8 +58,8 @@ export default function About() {
           <h3 className="text-lg font-bold text-blue-400 mb-3">Current Focus</h3>
           <p className="text-gray-300">
             Since 2017, I've been active in the Ethereum ecosystem, working with DAOs and exploring Zero-Knowledge Proofs. 
-            I co-organize Weekly Web3 Workshop (WW3WS) and manage my own Ethereum node and validator. 
-            Currently, I'm diving into AI/ML tools like Hugging Face, LlamaFile, and Langchain.
+            I formerly helped co-organize Weekly Web3 Workshop (WW3WS) and manage my own Ethereum node and validator. 
+            Currently, I'm building skills with AI/ML tools like Hugging Face, LlamaFile, and Langchain.
           </p>
         </div>
 

@@ -42,6 +42,13 @@ const PulsingPattern = () => {
   const lastNodeIdRef = useRef(0);
   const lastConnectionIdRef = useRef(0);
   const rafIdRef = useRef<number | null>(null);
+  const evolutionRef = useRef<NodeJS.Timeout | null>(null);
+  const nodesRef = useRef<Node[]>([]);
+  
+  // Update the ref when nodes change
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
   
   // Constants
   const MAX_NODES = 25;
@@ -50,8 +57,246 @@ const PulsingPattern = () => {
   const CONNECTION_THRESHOLD = 120;
   const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
 
+  // Generate a unique ID for particles
+  const getUniqueParticleId = () => {
+    return `particle-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  };
+
+  // Create new node
+  const createNode = useCallback((x: number, y: number, color: 'blue' | 'purple') => {
+    lastNodeIdRef.current += 1;
+    return {
+      id: lastNodeIdRef.current,
+      x,
+      y,
+      color,
+      size: 1,
+      createdAt: Date.now()
+    };
+  }, []);
+
+  // Create new connection
+  const createConnection = useCallback((fromId: number, toId: number) => {
+    lastConnectionIdRef.current += 1;
+    return {
+      id: lastConnectionIdRef.current,
+      from: fromId,
+      to: toId,
+      strength: 1,
+      createdAt: Date.now()
+    };
+  }, []);
+
+  // Create particle effect for a node
+  const createNodeParticles = useCallback((x: number, y: number, color: 'blue' | 'purple') => {
+    const newParticles: Particle[] = [];
+    const particleCount = Math.floor(Math.random() * 5) + 8;
+    
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (i / particleCount) * Math.PI * 2;
+      const speed = 0.8 + Math.random() * 1.2;
+      
+      newParticles.push({
+        id: getUniqueParticleId(),
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color,
+        life: 120,
+        size: Math.random() * 3.5 + 1.5
+      });
+    }
+    
+    setParticles(prevParticles => [...prevParticles, ...newParticles]);
+  }, []);
+
+  // Update particles (move them and reduce their life)
+  const updateParticles = useCallback(() => {
+    setParticles(prevParticles => {
+      return prevParticles
+        .map(p => ({
+          ...p,
+          x: p.x + p.vx,
+          y: p.y + p.vy,
+          life: p.life - 1,
+          size: p.size * 0.97
+        }))
+        .filter(p => p.life > 0);
+    });
+  }, []);
+
+  // Grow the pattern organically
+  const growPattern = useCallback(() => {
+    console.log('Growing pattern...');
+    if (!containerRef.current) return;
+    
+    // Use the ref to get the current nodes state
+    const currentNodes = nodesRef.current;
+    
+    // Safety check - ensure we have nodes
+    if (currentNodes.length === 0) return;
+    
+    // Stop if we've reached the maximum
+    if (currentNodes.length >= MAX_NODES) {
+      console.log('Maximum nodes reached, not growing further');
+      return;
+    }
+    
+    const container = containerRef.current;
+    const { width, height } = container.getBoundingClientRect();
+    
+    // Add 1-3 nodes at a time for organic growth with randomness
+    const nodesToAdd = Math.min(
+      Math.floor(Math.random() * 3) + 1,  // 1-3 nodes
+      MAX_NODES - currentNodes.length
+    );
+    
+    if (nodesToAdd <= 0) return;
+    
+    const newNodes: Node[] = [];
+    const newConnections: Connection[] = [];
+    
+    for (let i = 0; i < nodesToAdd; i++) {
+      // Choose a random parent node with safety check
+      const parentNodeIndex = Math.min(Math.floor(Math.random() * currentNodes.length), currentNodes.length - 1);
+      const parentNode = currentNodes[parentNodeIndex];
+      
+      // Add null check before using parentNode
+      if (!parentNode) continue;
+      
+      let foundPosition = false;
+      
+      // Try to find a valid position
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = MIN_NODE_DISTANCE * (1 + Math.random() * GOLDEN_RATIO);
+        
+        const newX = parentNode.x + Math.cos(angle) * distance;
+        const newY = parentNode.y + Math.sin(angle) * distance;
+        
+        // Check if position is valid
+        if (
+          newX >= 0 && newX <= width &&
+          newY >= 0 && newY <= height &&
+          !currentNodes.some(node => 
+            Math.hypot(node.x - newX, node.y - newY) < MIN_NODE_DISTANCE
+          )
+        ) {
+          // Alternate colors
+          const color = Math.random() > 0.4 ? 'blue' : 'purple';
+          
+          const newNode = createNode(newX, newY, color);
+          newNodes.push(newNode);
+          
+          // Create particle effect at birth
+          createNodeParticles(newX, newY, color);
+          
+          // Connect to parent
+          newConnections.push(createConnection(parentNode.id, newNode.id));
+          
+          // Connect to nearby nodes
+          currentNodes.forEach(node => {
+            const distance = Math.hypot(node.x - newX, node.y - newY);
+            if (
+              node.id !== parentNode.id && 
+              distance < CONNECTION_THRESHOLD &&
+              Math.random() > 0.3
+            ) {
+              newConnections.push(createConnection(node.id, newNode.id));
+            }
+          });
+          
+          foundPosition = true;
+          break;
+        }
+      }
+      
+      if (!foundPosition) {
+        // If we can't find a position, try again with a different parent
+        i--;
+      }
+    }
+    
+    // Update state with new nodes and connections
+    if (newNodes.length > 0) {
+      console.log(`Adding ${newNodes.length} new nodes`);
+      setNodes(prevNodes => [...prevNodes, ...newNodes]);
+      setConnections(prevConnections => [...prevConnections, ...newConnections]);
+    }
+  }, [CONNECTION_THRESHOLD, MIN_NODE_DISTANCE, MAX_NODES, createNodeParticles, createNode, createConnection]);
+
+  // Handle evolution system
+  const startEvolutionSystem = useCallback(() => {
+    console.log('Starting evolution system');
+    
+    // Clear any existing evolution timer
+    if (evolutionRef.current) {
+      clearTimeout(evolutionRef.current);
+    }
+    
+    const evolve = () => {
+      console.log(`Evolution cycle - Current nodes: ${nodesRef.current.length}/${MAX_NODES}`);
+      
+      // Only grow if we haven't reached the maximum
+      if (nodesRef.current.length < MAX_NODES) {
+        growPattern();
+        
+        // Always use the specified interval
+        const nextInterval = EVOLUTION_INTERVAL;
+        console.log(`Scheduling next evolution in ${nextInterval/1000} seconds`);
+        evolutionRef.current = setTimeout(evolve, nextInterval);
+      } else {
+        console.log('Maximum nodes reached, stopping evolution');
+      }
+    };
+    
+    // Start the first evolution cycle after a short delay
+    // This gives time for the component to fully initialize
+    evolutionRef.current = setTimeout(evolve, 2000);
+    
+    // Return cleanup function
+    return () => {
+      if (evolutionRef.current) {
+        clearTimeout(evolutionRef.current);
+      }
+    };
+  }, [growPattern, MAX_NODES, EVOLUTION_INTERVAL]);
+
+  // Handle clicks - make all nodes emit particles
+  const handleClick = useCallback(() => {
+    console.log('Click handler activated');
+    // Make every node emit particles
+    nodesRef.current.forEach(node => {
+      createNodeParticles(node.x, node.y, node.color);
+    });
+    
+    // Trigger a growth cycle for immediate feedback
+    if (nodesRef.current.length < MAX_NODES) {
+      growPattern();
+    }
+  }, [createNodeParticles, growPattern, MAX_NODES]);
+
+  // Main animation loop
+  const startAnimationLoop = useCallback(() => {
+    const animate = (timestamp: number) => {
+      // Update time state to trigger re-renders (this drives all animations)
+      setTime(timestamp);
+      
+      // Update particles
+      updateParticles();
+      
+      // Continue the loop
+      rafIdRef.current = requestAnimationFrame(animate);
+    };
+    
+    rafIdRef.current = requestAnimationFrame(animate);
+  }, [updateParticles]);
+
   // Initialize the pattern with a triangle
   useEffect(() => {
+    console.log('Initializing pattern');
+    
     if (containerRef.current) {
       const container = containerRef.current;
       const { width, height } = container.getBoundingClientRect();
@@ -114,6 +359,8 @@ const PulsingPattern = () => {
         },
       ];
 
+      console.log('Setting initial nodes and connections');
+      
       // Set initial state
       lastNodeIdRef.current = 3;
       lastConnectionIdRef.current = 3;
@@ -122,88 +369,20 @@ const PulsingPattern = () => {
       
       // Start animation loop
       startAnimationLoop();
-      
-      // Start evolution system
-      startEvolutionSystem();
     }
     
     return () => {
       // Clean up on unmount
+      console.log('Cleaning up component');
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
       }
-    };
-  }, []);
-
-  // Main animation loop
-  const startAnimationLoop = () => {
-    const animate = (timestamp: number) => {
-      // Update time state to trigger re-renders (this drives all animations)
-      setTime(timestamp);
-      
-      // Update particles
-      updateParticles();
-      
-      // Continue the loop
-      rafIdRef.current = requestAnimationFrame(animate);
-    };
-    
-    rafIdRef.current = requestAnimationFrame(animate);
-  };
-  
-  // Periodic pattern evolution system
-  const startEvolutionSystem = () => {
-    const evolve = () => {
-      if (nodes.length < MAX_NODES) {
-        growPattern();
+      if (evolutionRef.current) {
+        clearTimeout(evolutionRef.current);
       }
-      
-      // Schedule next evolution
-      setTimeout(evolve, EVOLUTION_INTERVAL);
     };
-    
-    // Start the first evolution after a delay
-    setTimeout(evolve, EVOLUTION_INTERVAL);
-  };
+  }, [startAnimationLoop]);
   
-  // Generate a unique ID for particles
-  const getUniqueParticleId = () => {
-    return `particle-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  };
-
-  // Create new node
-  const createNode = (x: number, y: number, color: 'blue' | 'purple') => {
-    lastNodeIdRef.current += 1;
-    return {
-      id: lastNodeIdRef.current,
-      x,
-      y,
-      color,
-      size: 1,
-      createdAt: Date.now()
-    };
-  };
-
-  // Create new connection
-  const createConnection = (fromId: number, toId: number) => {
-    lastConnectionIdRef.current += 1;
-    return {
-      id: lastConnectionIdRef.current,
-      from: fromId,
-      to: toId,
-      strength: 1,
-      createdAt: Date.now()
-    };
-  };
-
-  // Handle clicks - make all nodes emit particles
-  const handleClick = useCallback(() => {
-    // Make every node emit particles
-    nodes.forEach(node => {
-      createNodeParticles(node.x, node.y, node.color);
-    });
-  }, [nodes]);
-
   // Add click event listener
   useEffect(() => {
     if (containerRef.current) {
@@ -216,134 +395,17 @@ const PulsingPattern = () => {
       }
     };
   }, [handleClick]);
-
-  // Create particle effect for a node
-  const createNodeParticles = (x: number, y: number, color: 'blue' | 'purple') => {
-    const newParticles: Particle[] = [];
-    const particleCount = Math.floor(Math.random() * 5) + 8;
-    
-    for (let i = 0; i < particleCount; i++) {
-      const angle = (i / particleCount) * Math.PI * 2;
-      const speed = 0.8 + Math.random() * 1.2;
-      
-      newParticles.push({
-        id: getUniqueParticleId(),
-        x,
-        y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        color,
-        life: 120,
-        size: Math.random() * 3.5 + 1.5
-      });
+  
+  // Start evolution system after initialization - only ONCE
+  useEffect(() => {
+    // Only run this effect once after initial nodes are set
+    const hasInitialNodes = nodes.length > 0;
+    if (hasInitialNodes) {
+      console.log(`Starting evolution system with ${nodes.length} initial nodes - ONE TIME SETUP`);
+      const cleanup = startEvolutionSystem();
+      return cleanup;
     }
-    
-    setParticles(prevParticles => [...prevParticles, ...newParticles]);
-  };
-
-  // Update particles (move them and reduce their life)
-  const updateParticles = () => {
-    setParticles(prevParticles => {
-      return prevParticles
-        .map(p => ({
-          ...p,
-          x: p.x + p.vx,
-          y: p.y + p.vy,
-          life: p.life - 1,
-          size: p.size * 0.97
-        }))
-        .filter(p => p.life > 0);
-    });
-  };
-
-  // Grow the pattern organically
-  const growPattern = () => {
-    if (!containerRef.current) return;
-    
-    // Safety check - ensure we have nodes
-    if (nodes.length === 0) return;
-    
-    const container = containerRef.current;
-    const { width, height } = container.getBoundingClientRect();
-    
-    // Add 1-2 nodes at a time
-    const nodesToAdd = Math.min(
-      Math.floor(Math.random() * 2) + 1,
-      MAX_NODES - nodes.length
-    );
-    
-    if (nodesToAdd <= 0) return;
-    
-    const newNodes: Node[] = [];
-    const newConnections: Connection[] = [];
-    
-    for (let i = 0; i < nodesToAdd; i++) {
-      // Choose a random parent node with safety check
-      const parentNodeIndex = Math.min(Math.floor(Math.random() * nodes.length), nodes.length - 1);
-      const parentNode = nodes[parentNodeIndex];
-      
-      // Add null check before using parentNode
-      if (!parentNode) continue;
-      
-      let foundPosition = false;
-      
-      // Try to find a valid position
-      for (let attempt = 0; attempt < 10; attempt++) {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = MIN_NODE_DISTANCE * (1 + Math.random() * GOLDEN_RATIO);
-        
-        const newX = parentNode.x + Math.cos(angle) * distance;
-        const newY = parentNode.y + Math.sin(angle) * distance;
-        
-        // Check if position is valid
-        if (
-          newX >= 0 && newX <= width &&
-          newY >= 0 && newY <= height &&
-          !nodes.some(node => 
-            Math.hypot(node.x - newX, node.y - newY) < MIN_NODE_DISTANCE
-          )
-        ) {
-          // Alternate colors
-          const color = Math.random() > 0.4 ? 'blue' : 'purple';
-          
-          const newNode = createNode(newX, newY, color);
-          newNodes.push(newNode);
-          
-          // Create particle effect at birth
-          createNodeParticles(newX, newY, color);
-          
-          // Connect to parent
-          newConnections.push(createConnection(parentNode.id, newNode.id));
-          
-          // Connect to nearby nodes
-          nodes.forEach(node => {
-            const distance = Math.hypot(node.x - newX, node.y - newY);
-            if (
-              node.id !== parentNode.id && 
-              distance < CONNECTION_THRESHOLD &&
-              Math.random() > 0.3
-            ) {
-              newConnections.push(createConnection(node.id, newNode.id));
-            }
-          });
-          
-          foundPosition = true;
-          break;
-        }
-      }
-      
-      if (!foundPosition) {
-        // If we can't find a position, try again with a different parent
-        i--;
-      }
-    }
-    
-    // Update state with new nodes and connections
-    if (newNodes.length > 0) {
-      setNodes(prevNodes => [...prevNodes, ...newNodes]);
-      setConnections(prevConnections => [...prevConnections, ...newConnections]);
-    }
-  };
+  }, [startEvolutionSystem, nodes.length]); // Include nodes.length to ensure it runs after nodes are set
 
   // Calculate node visual style based on age and pulse
   const calculateNodeStyle = useCallback((node: Node) => {
@@ -471,7 +533,7 @@ const PulsingPattern = () => {
       opacity = baseOpacity + (pulseValue * 0.2);
     }
     
-    // Color based on from node
+    // Color based from from node
     let color;
     if (isNewConnection) {
       // Brighter color for new connections
@@ -521,6 +583,8 @@ const PulsingPattern = () => {
         className="absolute inset-0 bg-gradient-to-br opacity-20"
         style={backgroundGradient()}
       ></div>
+      
+      {/* No debug info displayed */}
       
       <svg className="w-full h-full" style={{ pointerEvents: 'none' }}>
         {/* Draw connections */}
