@@ -26,7 +26,7 @@ export default function Navbar() {
             href="/" 
             className="text-2xl font-pacifico bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text"
           >
-            Kieran Sweetman
+            giantflyingegg.uk
           </Link>
 
           {/* Mobile menu button */}

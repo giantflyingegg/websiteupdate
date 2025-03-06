@@ -16,6 +16,7 @@ interface Connection {
   from: number;
   to: number;
   strength: number;
+  createdAt: number;
 }
 
 interface Particle {
@@ -34,29 +35,22 @@ const PulsingPattern = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [particles, setParticles] = useState<Particle[]>([]);
-  const [evolutionStage, setEvolutionStage] = useState(0);
+  const [time, setTime] = useState<number>(0);
   
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
-  const pulsePhaseRef = useRef(0);
   const lastNodeIdRef = useRef(0);
   const lastConnectionIdRef = useRef(0);
-  const animationFrameRef = useRef<number | null>(null);
-  const isVisibleRef = useRef(true);
+  const rafIdRef = useRef<number | null>(null);
   
   // Constants
   const MAX_NODES = 25;
-  const BASE_EVOLUTION_DELAY = 6000; // ms
+  const EVOLUTION_INTERVAL = 6000; // ms
   const MIN_NODE_DISTANCE = 50;
   const CONNECTION_THRESHOLD = 120;
   const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
 
-  // Generate unique IDs for particles
-  const getUniqueId = () => {
-    return `particle-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  };
-
-  // Initialize the pattern
+  // Initialize the pattern with a triangle
   useEffect(() => {
     if (containerRef.current) {
       const container = containerRef.current;
@@ -65,35 +59,119 @@ const PulsingPattern = () => {
       const centerX = width / 2;
       const centerY = height / 2;
       const radius = Math.min(width, height) * 0.2;
+      const now = Date.now();
 
-      // Create initial triangle
+      // Create initial triangle pattern
       const initialNodes = [
-        createNode(centerX, centerY - radius, 'blue'),
-        createNode(
-          centerX - radius * Math.cos(Math.PI / 6), 
-          centerY + radius * Math.sin(Math.PI / 6), 
-          'purple'
-        ),
-        createNode(
-          centerX + radius * Math.cos(Math.PI / 6), 
-          centerY + radius * Math.sin(Math.PI / 6), 
-          'blue'
-        ),
+        {
+          id: 1,
+          x: centerX,
+          y: centerY - radius,
+          color: 'blue' as 'blue',
+          size: 1,
+          createdAt: now
+        },
+        {
+          id: 2,
+          x: centerX - radius * Math.cos(Math.PI / 6),
+          y: centerY + radius * Math.sin(Math.PI / 6),
+          color: 'purple' as 'purple',
+          size: 1,
+          createdAt: now
+        },
+        {
+          id: 3,
+          x: centerX + radius * Math.cos(Math.PI / 6),
+          y: centerY + radius * Math.sin(Math.PI / 6),
+          color: 'blue' as 'blue',
+          size: 1,
+          createdAt: now
+        },
       ];
 
+      // Connect nodes to form a triangle
       const initialConnections = [
-        createConnection(1, 2),
-        createConnection(2, 3),
-        createConnection(3, 1),
+        {
+          id: 1,
+          from: 1,
+          to: 2,
+          strength: 1,
+          createdAt: now
+        },
+        {
+          id: 2,
+          from: 2,
+          to: 3,
+          strength: 1,
+          createdAt: now
+        },
+        {
+          id: 3,
+          from: 3,
+          to: 1,
+          strength: 1,
+          createdAt: now
+        },
       ];
 
+      // Set initial state
+      lastNodeIdRef.current = 3;
+      lastConnectionIdRef.current = 3;
       setNodes(initialNodes);
       setConnections(initialConnections);
-      setEvolutionStage(1);
+      
+      // Start animation loop
+      startAnimationLoop();
+      
+      // Start evolution system
+      startEvolutionSystem();
     }
+    
+    return () => {
+      // Clean up on unmount
+      if (rafIdRef.current) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+    };
   }, []);
 
-  // Helper function to create a new node
+  // Main animation loop
+  const startAnimationLoop = () => {
+    const animate = (timestamp: number) => {
+      // Update time state to trigger re-renders (this drives all animations)
+      setTime(timestamp);
+      
+      // Update particles
+      updateParticles();
+      
+      // Continue the loop
+      rafIdRef.current = requestAnimationFrame(animate);
+    };
+    
+    rafIdRef.current = requestAnimationFrame(animate);
+  };
+  
+  // Periodic pattern evolution system
+  const startEvolutionSystem = () => {
+    const evolve = () => {
+      if (nodes.length < MAX_NODES) {
+        growPattern();
+      }
+      
+      // Schedule next evolution
+      setTimeout(evolve, EVOLUTION_INTERVAL);
+    };
+    
+    // Start the first evolution after a delay
+    setTimeout(evolve, EVOLUTION_INTERVAL);
+  };
+  
+  // Generate a unique ID for particles
+  const getUniqueParticleId = () => {
+    return `particle-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  };
+
+  // Create new node
   const createNode = (x: number, y: number, color: 'blue' | 'purple') => {
     lastNodeIdRef.current += 1;
     return {
@@ -106,7 +184,7 @@ const PulsingPattern = () => {
     };
   };
 
-  // Helper function to create a new connection
+  // Create new connection
   const createConnection = (fromId: number, toId: number) => {
     lastConnectionIdRef.current += 1;
     return {
@@ -114,10 +192,11 @@ const PulsingPattern = () => {
       from: fromId,
       to: toId,
       strength: 1,
+      createdAt: Date.now()
     };
   };
 
-  // Create particle effects for all nodes when clicked
+  // Handle clicks - make all nodes emit particles
   const handleClick = useCallback(() => {
     // Make every node emit particles
     nodes.forEach(node => {
@@ -138,113 +217,51 @@ const PulsingPattern = () => {
     };
   }, [handleClick]);
 
-  // Handle visibility changes (tab switching)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      isVisibleRef.current = document.visibilityState === 'visible';
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
-  // Main animation loop
-  useEffect(() => {
-    let startTime = performance.now();
-    const pulseDuration = 4000; // 4 seconds per cycle
-    
-    const animate = (currentTime: number) => {
-      if (!isVisibleRef.current) {
-        // Skip animation frames when not visible
-        animationFrameRef.current = requestAnimationFrame(animate);
-        return;
-      }
-      
-      // Calculate pulse phase (0 to 1)
-      const elapsed = currentTime - startTime;
-      const phase = (elapsed % pulseDuration) / pulseDuration;
-      const pulseValue = (Math.sin(phase * Math.PI * 2) + 1) / 2;
-      
-      pulsePhaseRef.current = pulseValue;
-      
-      // Update particle positions
-      updateParticles();
-      
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-    
-    animationFrameRef.current = requestAnimationFrame(animate);
-    
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
-
   // Create particle effect for a node
   const createNodeParticles = (x: number, y: number, color: 'blue' | 'purple') => {
-    setParticles(prevParticles => {
-      const newParticles = [];
-      const particleCount = Math.floor(Math.random() * 5) + 8;
+    const newParticles: Particle[] = [];
+    const particleCount = Math.floor(Math.random() * 5) + 8;
+    
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (i / particleCount) * Math.PI * 2;
+      const speed = 0.8 + Math.random() * 1.2;
       
-      for (let i = 0; i < particleCount; i++) {
-        const angle = (i / particleCount) * Math.PI * 2;
-        const speed = 0.8 + Math.random() * 1.2;
-        
-        newParticles.push({
-          id: getUniqueId(),
-          x,
-          y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          color,
-          life: 120,
-          size: Math.random() * 3.5 + 1.5
-        });
-      }
-      
-      return [...prevParticles, ...newParticles];
-    });
+      newParticles.push({
+        id: getUniqueParticleId(),
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        color,
+        life: 120,
+        size: Math.random() * 3.5 + 1.5
+      });
+    }
+    
+    setParticles(prevParticles => [...prevParticles, ...newParticles]);
   };
 
-  // Update particles
+  // Update particles (move them and reduce their life)
   const updateParticles = () => {
     setParticles(prevParticles => {
-      // No automatic particle creation during pulse peaks
-      // Only update existing particles
       return prevParticles
         .map(p => ({
           ...p,
           x: p.x + p.vx,
           y: p.y + p.vy,
           life: p.life - 1,
-          size: p.size * 0.97 // Shrink over time
+          size: p.size * 0.97
         }))
-        .filter(p => p.life > 0); // Remove dead particles
+        .filter(p => p.life > 0);
     });
   };
 
-  // Evolution system - grow the pattern on a regular schedule
-  useEffect(() => {
-    if (nodes.length >= MAX_NODES) {
-      return; // Stop evolving if max nodes reached
-    }
-    
-    const timer = setTimeout(() => {
-      growPattern();
-      setEvolutionStage(prev => prev + 1);
-    }, BASE_EVOLUTION_DELAY);
-    
-    return () => clearTimeout(timer);
-  }, [evolutionStage, nodes.length]);
-
   // Grow the pattern organically
   const growPattern = () => {
-    if (!containerRef.current || !isVisibleRef.current) return;
+    if (!containerRef.current) return;
+    
+    // Safety check - ensure we have nodes
+    if (nodes.length === 0) return;
     
     const container = containerRef.current;
     const { width, height } = container.getBoundingClientRect();
@@ -257,13 +274,16 @@ const PulsingPattern = () => {
     
     if (nodesToAdd <= 0) return;
     
-    const newNodes = [];
-    const newConnections = [];
+    const newNodes: Node[] = [];
+    const newConnections: Connection[] = [];
     
     for (let i = 0; i < nodesToAdd; i++) {
-      // Choose a random parent node
-      const parentNodeIndex = Math.floor(Math.random() * nodes.length);
+      // Choose a random parent node with safety check
+      const parentNodeIndex = Math.min(Math.floor(Math.random() * nodes.length), nodes.length - 1);
       const parentNode = nodes[parentNodeIndex];
+      
+      // Add null check before using parentNode
+      if (!parentNode) continue;
       
       let foundPosition = false;
       
@@ -313,21 +333,28 @@ const PulsingPattern = () => {
       }
       
       if (!foundPosition) {
-        // If we can't find a position, try again with a different parent node
+        // If we can't find a position, try again with a different parent
         i--;
       }
     }
     
-    setNodes(prevNodes => [...prevNodes, ...newNodes]);
-    setConnections(prevConnections => [...prevConnections, ...newConnections]);
+    // Update state with new nodes and connections
+    if (newNodes.length > 0) {
+      setNodes(prevNodes => [...prevNodes, ...newNodes]);
+      setConnections(prevConnections => [...prevConnections, ...newConnections]);
+    }
   };
 
-  // Calculate node style
+  // Calculate node visual style based on age and pulse
   const calculateNodeStyle = useCallback((node: Node) => {
-    const pulsePhase = pulsePhaseRef.current;
-    const pulseScale = 1 + (pulsePhase * 0.2);
+    // Current time for age calculation
+    const now = Date.now();
+    const age = now - node.createdAt;
     
-    const age = Date.now() - node.createdAt;
+    // Calculate pulse phase (0 to 1)
+    const pulseDuration = 4000; // 4 seconds per cycle
+    const pulsePhase = ((now % pulseDuration) / pulseDuration);
+    const pulseValue = (Math.sin(pulsePhase * Math.PI * 2) + 1) / 2;
     
     // Node growth animation
     let ageScale;
@@ -350,11 +377,12 @@ const PulsingPattern = () => {
       0.3 * Math.max(0, 1 - (age / 1800)) * (1 + Math.sin(age / 80) * 0.5) : 0;
     
     // Final scale calculation
+    const pulseScale = 1 + (pulseValue * 0.2);
     const finalScale = (pulseScale + flashEffect) * ageScale;
     
     // Node dimensions
     const coreRadius = 6 * finalScale * node.size;
-    const glowRadius = coreRadius * 2 + (pulsePhase * 4);
+    const glowRadius = coreRadius * 2 + (pulseValue * 4);
     
     // Opacity calculation
     let baseOpacity;
@@ -363,7 +391,7 @@ const PulsingPattern = () => {
       baseOpacity = Math.min(0.8, age / 500 * 0.8);
     } else {
       // Normal pulse
-      baseOpacity = 0.8 + (pulsePhase * 0.2);
+      baseOpacity = 0.8 + (pulseValue * 0.2);
     }
     
     const glowOpacity = 0.2 * baseOpacity;
@@ -404,7 +432,7 @@ const PulsingPattern = () => {
         fillOpacity: glowOpacity,
       }
     };
-  }, []);
+  }, [time]); // Depend on time to ensure recalculation on each animation frame
 
   // Calculate connection style
   const calculateConnectionStyle = useCallback((connection: Connection) => {
@@ -415,29 +443,46 @@ const PulsingPattern = () => {
       return null;
     }
     
-    const pulsePhase = pulsePhaseRef.current;
+    // Current time for calculations
+    const now = Date.now();
+    
+    // Calculate pulse phase (0 to 1)
+    const pulseDuration = 4000; // 4 seconds per cycle
+    const pulsePhase = ((now % pulseDuration) / pulseDuration);
+    const pulseValue = (Math.sin(pulsePhase * Math.PI * 2) + 1) / 2;
     
     // Connection age calculation
-    const fromNodeAge = Date.now() - fromNode.createdAt;
-    const toNodeAge = Date.now() - toNode.createdAt;
-    const connectionAge = Math.min(fromNodeAge, toNodeAge);
+    const connectionAge = now - connection.createdAt;
+    const isNewConnection = connectionAge < 1800;
     
     // Connection properties
     const baseWidth = 1.5 * connection.strength;
-    const width = baseWidth + (pulsePhase * 0.8);
+    const width = baseWidth + (pulseValue * 0.8);
     
     // Opacity with fade-in
     let opacity;
     if (connectionAge < 800) {
+      // Fade in gradually
       const baseOpacity = Math.min(0.3, connectionAge / 800 * 0.3) * connection.strength;
-      opacity = baseOpacity + (pulsePhase * 0.2);
+      opacity = baseOpacity + (pulseValue * 0.2);
     } else {
+      // Regular opacity for established connections
       const baseOpacity = 0.3 * connection.strength;
-      opacity = baseOpacity + (pulsePhase * 0.2);
+      opacity = baseOpacity + (pulseValue * 0.2);
     }
     
     // Color based on from node
-    const color = fromNode.color === 'blue' ? '#60A5FA' : '#A855F7';
+    let color;
+    if (isNewConnection) {
+      // Brighter color for new connections
+      const brightnessFactor = Math.max(0, 1 - (connectionAge / 1800));
+      color = fromNode.color === 'blue' ? 
+        `rgba(${96 + 159 * brightnessFactor}, ${165 + 90 * brightnessFactor}, 250, ${opacity})` :
+        `rgba(${168 + 87 * brightnessFactor}, ${85 + 170 * brightnessFactor}, 247, ${opacity})`;
+    } else {
+      // Standard colors for established connections
+      color = fromNode.color === 'blue' ? '#60A5FA' : '#A855F7';
+    }
     
     return {
       x1: fromNode.x,
@@ -448,20 +493,33 @@ const PulsingPattern = () => {
       strokeWidth: width,
       strokeOpacity: opacity,
     };
-  }, [nodes]);
+  }, [nodes, time]); // Depend on nodes and time to ensure recalculation
+
+  // Calculate background gradient position based on time
+  const backgroundGradient = useCallback(() => {
+    const now = Date.now();
+    const cycle = 10000; // 10 second cycle
+    const phase = (now % cycle) / cycle;
+    
+    return {
+      backgroundImage: `radial-gradient(
+        circle at ${50 + Math.sin(phase * Math.PI * 2) * 10}% ${50 + Math.cos(phase * Math.PI * 2) * 10}%, 
+        rgba(37, 99, 235, 0.1), 
+        rgba(0, 0, 0, 0)
+      )`
+    };
+  }, [time]); // Depend on time to ensure recalculation
 
   return (
-    <div ref={containerRef} className="w-full h-full relative cursor-pointer">
+    <div 
+      ref={containerRef} 
+      className="w-full h-full relative cursor-pointer"
+      onClick={handleClick}
+    >
       {/* Background gradient effect */}
       <div 
         className="absolute inset-0 bg-gradient-to-br opacity-20"
-        style={{
-          backgroundImage: `radial-gradient(
-            circle at ${50 + Math.sin(pulsePhaseRef.current * Math.PI) * 10}% ${50 + Math.cos(pulsePhaseRef.current * Math.PI) * 10}%, 
-            rgba(37, 99, 235, 0.1), 
-            rgba(0, 0, 0, 0)
-          )`
-        }}
+        style={backgroundGradient()}
       ></div>
       
       <svg className="w-full h-full" style={{ pointerEvents: 'none' }}>
@@ -474,7 +532,6 @@ const PulsingPattern = () => {
             <line
               key={`connection-${connection.id}`}
               {...style}
-              className="transition-all duration-300"
             />
           );
         })}
@@ -496,16 +553,14 @@ const PulsingPattern = () => {
           const style = calculateNodeStyle(node);
           
           return (
-            <g key={`node-${node.id}`} className="transition-transform duration-300">
+            <g key={`node-${node.id}`}>
               {/* Node glow/halo */}
               <circle
                 {...style.glow}
-                className="transition-all duration-300"
               />
               {/* Node core */}
               <circle
                 {...style.core}
-                className="transition-all duration-300"
               />
             </g>
           );
