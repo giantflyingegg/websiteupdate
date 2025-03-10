@@ -1,27 +1,29 @@
+// app/portfolio/page.tsx
 import ProjectGrid from '@/components/portfolio/ProjectGrid';
-import { Metadata } from 'next';
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Portfolio | Kieran Sweetman',
-  description: 'Portfolio of projects by Kieran Sweetman - Web development, Solidity, and AI',
+  description: 'View my portfolio of web development, blockchain, and AI projects.',
 };
 
 export default function PortfolioPage() {
   return (
-    <div className="min-h-screen pt-20 pb-16">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <header className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-pacifico bg-gradient-to-r from-blue-400 to-purple-500 
-                       text-transparent bg-clip-text mb-4">
-            My Projects
+    <div className="min-h-screen bg-gray-900 pt-16 pb-24">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <div className="mb-12 text-center max-w-4xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-pacifico mb-6 
+                       bg-gradient-to-r from-blue-400 to-purple-500 
+                       text-transparent bg-clip-text">
+            My Portfolio
           </h1>
-          <p className="text-gray-300 max-w-3xl">
-            A collection of my work spanning web development, blockchain, AI, and more. 
-            Each project represents different skills and technologies I've been exploring
-            on my journey from medicine to tech.
+          <p className="text-gray-300 text-lg md:text-xl mx-auto">
+            A collection of my projects spanning web development, blockchain applications, 
+            and AI experiments. Each project represents a step in my journey from medicine to technology.
           </p>
-        </header>
+        </div>
         
+        {/* Main Portfolio Grid */}
         <ProjectGrid />
       </div>
     </div>
