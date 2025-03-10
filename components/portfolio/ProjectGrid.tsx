@@ -13,20 +13,15 @@ const projectTypes = [
   { id: 'other', label: 'Other' },
 ];
 
-// Sort projects by completion date (oldest first to show progression)
-const sortedProjects = [...projects].sort((a, b) => {
-  // Parse dates and compare them
-  const dateA = new Date(a.dateCompleted);
-  const dateB = new Date(b.dateCompleted);
-  return dateA.getTime() - dateB.getTime();
-});
-
 export default function ProjectGrid() {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const gridRef = useRef<HTMLDivElement>(null);
+  
+  // Projects are already in chronological order in the data file
+  const sortedProjects = [...projects];
 
-  // Filter projects based on selected type (maintaining chronological order)
+  // Filter projects based on selected type
   const filteredProjects = selectedType === 'all' 
     ? sortedProjects 
     : sortedProjects.filter(project => project.type === selectedType);
@@ -58,6 +53,12 @@ export default function ProjectGrid() {
     };
   }, []);
 
+  // Function to check if a project is one of the new AI or blockchain projects
+  const isNewProject = (projectId: string) => {
+    const newProjectIds = ['discord-ai-bot', 'spotify-sentiment-playlist', 'text-to-image-generator', 'tokenized-real-estate'];
+    return newProjectIds.includes(projectId);
+  };
+
   return (
     <div 
       ref={gridRef}
@@ -65,10 +66,16 @@ export default function ProjectGrid() {
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
     >
-      {/* Title with gradient */}
+      {/* Section title with gradient */}
       <h1 className="text-3xl md:text-4xl lg:text-5xl font-pacifico text-center mb-8 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
         My Projects
       </h1>
+      
+      {/* Short description */}
+      <p className="text-gray-300 text-center max-w-3xl mx-auto mb-10">
+        A collection of my work spanning web development, AI, and blockchain projects. 
+        These projects represent my learning journey and growing expertise across different technologies.
+      </p>
 
       {/* Filter buttons */}
       <div className="flex flex-wrap justify-center gap-2 mb-8">
@@ -86,6 +93,8 @@ export default function ProjectGrid() {
         ))}
       </div>
 
+      {/* No indicator text needed */}
+
       {/* Grid of projects with staggered animation */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredProjects.map((project, index) => (
@@ -95,11 +104,20 @@ export default function ProjectGrid() {
               isVisible 
                 ? 'translate-y-0 opacity-100' 
                 : 'translate-y-20 opacity-0'
+            } ${
+              isNewProject(project.id) 
+                ? 'relative group' 
+                : ''
             }`}
             style={{ 
               transitionDelay: `${150 * (index % 6)}ms` // Staggered animation
             }}
           >
+            {/* New project indicator - animated border */}
+            {isNewProject(project.id) && (
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 rounded-xl opacity-75 blur-sm group-hover:opacity-100 transition duration-1000 group-hover:duration-300 animate-pulse -z-10"></div>
+            )}
+            
             <ProjectCard project={project} />
           </div>
         ))}
@@ -123,15 +141,6 @@ export default function ProjectGrid() {
           </svg>
           <p className="text-gray-400 text-lg">No projects found for this filter.</p>
           <p className="text-gray-500 mt-2">Try selecting a different category.</p>
-        </div>
-      )}
-
-      {/* Progression indicator */}
-      {filteredProjects.length > 0 && selectedType === 'all' && (
-        <div className="mt-16 text-center">
-          <p className="text-gray-400 italic">
-            These projects are ordered by completion date to showcase my learning progression from my first build to more complex applications.
-          </p>
         </div>
       )}
     </div>
