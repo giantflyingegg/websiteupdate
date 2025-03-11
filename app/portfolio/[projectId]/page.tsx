@@ -22,13 +22,8 @@ export function generateMetadata({ params }: { params: { projectId: string } }) 
   };
 }
 
-// Define page props following Next.js conventions
-type Props = {
-  params: { projectId: string }
-  searchParams: { [key: string]: string | string[] | undefined }
-}
-
-export default function ProjectPage({ params }: Props) {
+// In Next.js App Router, we use the direct component params type
+export default function ProjectPage({ params }: { params: { projectId: string } }) {
   const { projectId } = params;
   
   // Find the project by ID
