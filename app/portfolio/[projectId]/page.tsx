@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Project, projects } from '@/data/projects';
+import { projects } from '@/data/projects';
 import PlaceholderImage from '@/components/shared/PlaceholderImage';
 
 // Generate metadata for each project page
@@ -22,14 +22,13 @@ export function generateMetadata({ params }: { params: { projectId: string } }) 
   };
 }
 
-// Define page props
-interface ProjectPageProps {
-  params: {
-    projectId: string;
-  };
+// Define page props following Next.js conventions
+type Props = {
+  params: { projectId: string }
+  searchParams: { [key: string]: string | string[] | undefined }
 }
 
-export default function ProjectPage({ params }: ProjectPageProps) {
+export default function ProjectPage({ params }: Props) {
   const { projectId } = params;
   
   // Find the project by ID

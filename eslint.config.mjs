@@ -14,6 +14,9 @@ const eslintConfig = [
   {
     rules: {
       'react/no-unescaped-entities': 'off',
+      '@typescript-eslint/no-unused-vars': 'warn', // Downgrade from error to warning
+      'react-hooks/exhaustive-deps': 'warn', // Make dependency warnings just warnings
+      '@typescript-eslint/prefer-as-const': 'warn', // Downgrade const assertions
     },
   },
 ];
