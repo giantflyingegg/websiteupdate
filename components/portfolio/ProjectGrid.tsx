@@ -67,7 +67,7 @@ export default function ProjectGrid() {
       }`}
     >
       {/* Section title with gradient */}
-      <h1 className="text-3xl md:text-4xl lg:text-5xl font-pacifico text-center mb-8 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+      <h1 className="text-3xl md:text-4xl lg:text-5xl font-pacifico text-center mb-8 pb-5 pt-1 leading-relaxed bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
         My Projects
       </h1>
       

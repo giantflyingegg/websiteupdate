@@ -8,7 +8,7 @@ interface SectionCardProps {
 
 const SectionCard = ({ id, title, children }: SectionCardProps) => {
   return (
-    <section id={id} className="relative my-10 sm:my-16 md:my-20 mx-3 sm:mx-4 md:mx-10">
+      <section id={id} className="relative my-4 sm:my-6 md:my-8 mx-3 sm:mx-4 md:mx-10">
       {/* Gradient border effect using pseudo-element */}
       <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl 
                     opacity-75 blur group-hover:opacity-100 transition duration-300
